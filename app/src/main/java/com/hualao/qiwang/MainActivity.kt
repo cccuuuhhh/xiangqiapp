@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -17,8 +16,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hualao.qiwang.data.ApiKeyStore
 import com.hualao.qiwang.ui.screen.ApiKeySetupScreen
 import com.hualao.qiwang.ui.screen.GameScreen
+import com.hualao.qiwang.ui.screen.SettingsScreen
 import com.hualao.qiwang.ui.theme.XiangqiTheme
 import com.hualao.qiwang.viewmodel.GameViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * 话唠棋王 — Android 入口 Activity
@@ -27,10 +29,12 @@ import com.hualao.qiwang.viewmodel.GameViewModel
  * - DeepSeek API Key 由用户首次启动时手动输入
  * - Pikafish 引擎本地运行（NDK/JNI）
  * - Jetpack Compose 全声明式 UI
+ * - Android 16 (API 36) 完整适配：edge-to-edge + Predictive Back + 16KB page size
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Android 15+ 强制 edge-to-edge，支持 Predictive Back Gesture
         enableEdgeToEdge()
         setContent {
             XiangqiTheme {
@@ -45,36 +49,36 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * 页面枚举：API Key 设置 → 游戏主界面，设置页作为一个状态。
+ */
+private enum class AppScreen { SETUP, GAME, SETTINGS }
+
 @Composable
 fun App() {
     val context = LocalContext.current
+    val keyStore = remember { ApiKeyStore(context) }
 
-    // 检查 API Key 状态
+    // API Key 状态
     var hasApiKey by remember { mutableStateOf<Boolean?>(null) }
+    var maskedKey by remember { mutableStateOf("") }
+    var currentScreen by remember { mutableStateOf(AppScreen.SETUP) }
 
+    // 初始化
     LaunchedEffect(Unit) {
-        val keyStore = ApiKeyStore(context)
         hasApiKey = keyStore.hasApiKey()
+        if (hasApiKey == true) {
+            maskedKey = keyStore.getMaskedApiKey()
+            currentScreen = AppScreen.GAME
+        } else {
+            currentScreen = AppScreen.SETUP
+        }
     }
 
-    // 检查中，显示空白
+    // 加载中
     if (hasApiKey == null) return
 
-    if (hasApiKey == false) {
-        // 首次启动 — 显示 API Key 设置页
-        ApiKeySetupScreen(
-            onKeyConfirmed = { key ->
-                if (key.isNotBlank()) {
-                    val keyStore = ApiKeyStore(context)
-                    keyStore.saveApiKey(key)
-                }
-                hasApiKey = true
-            }
-        )
-        return
-    }
-
-    // 已配置 Key — 创建 ViewModel 并进入游戏主界面
+    // ViewModel（懒初始化，仅在进入 GAME 页面时创建）
     val factory = remember {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -83,20 +87,62 @@ fun App() {
             }
         }
     }
-    val viewModel: GameViewModel = viewModel(factory = factory)
+    val gameViewModel: GameViewModel = viewModel(factory = factory)
 
-    GameScreen(viewModel = viewModel)
-}
+    // 路由
+    when (currentScreen) {
+        AppScreen.SETUP -> {
+            ApiKeySetupScreen(
+                onKeyConfirmed = { key ->
+                    if (key.isNotBlank()) {
+                        keyStore.saveApiKey(key)
+                    }
+                    hasApiKey = true
+                    maskedKey = keyStore.getMaskedApiKey()
+                    currentScreen = AppScreen.GAME
+                }
+            )
+        }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-@Composable
-fun AppPreview() {
-    XiangqiTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Text("话唠棋王")
+        AppScreen.GAME -> {
+            GameScreen(
+                viewModel = gameViewModel,
+                onOpenSettings = {
+                    maskedKey = keyStore.getMaskedApiKey()
+                    currentScreen = AppScreen.SETTINGS
+                }
+            )
+        }
+
+        AppScreen.SETTINGS -> {
+            SettingsScreen(
+                hasApiKey = hasApiKey == true,
+                maskedKey = maskedKey,
+                onSaveKey = { key ->
+                    keyStore.saveApiKey(key)
+                    hasApiKey = true
+                    maskedKey = keyStore.getMaskedApiKey()
+                },
+                onDeleteKey = {
+                    keyStore.clearApiKey()
+                    hasApiKey = false
+                    maskedKey = ""
+                    currentScreen = AppScreen.SETUP
+                },
+                onValidateKey = { key ->
+                    withContext(Dispatchers.IO) {
+                        // 简单格式验证 + 异步调用 DeepSeek
+                        if (!key.startsWith("sk-")) {
+                            return@withContext false
+                        }
+                        val client = com.hualao.qiwang.ai.DeepSeekApiClient(key)
+                        client.validateApiKey()
+                    }
+                },
+                onBack = {
+                    currentScreen = AppScreen.GAME
+                }
+            )
         }
     }
 }

@@ -4,6 +4,8 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +41,7 @@ import com.hualao.qiwang.viewmodel.StreamType
 @Composable
 fun GameScreen(
     viewModel: GameViewModel,
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val session by viewModel.session.collectAsState()
@@ -87,14 +90,23 @@ fun GameScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ========== 性格选择器 ==========
-            PersonalitySelector(
-                personalities = viewModel.getPersonalities(),
-                selectedIndex = session.personality?.let { p ->
-                    viewModel.getPersonalities().indexOfFirst { it.id == p.id }
-                } ?: 0,
-                onSelect = { viewModel.switchPersonality(it) }
-            )
+            // ========== 性格选择器 + 设置按钮 ==========
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PersonalitySelector(
+                    personalities = viewModel.getPersonalities(),
+                    selectedIndex = session.personality?.let { p ->
+                        viewModel.getPersonalities().indexOfFirst { it.id == p.id }
+                    } ?: 0,
+                    onSelect = { viewModel.switchPersonality(it) },
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Default.Settings, contentDescription = "设置")
+                }
+            }
 
             // ========== 棋盘区域 ==========
             ChessBoardCanvas(

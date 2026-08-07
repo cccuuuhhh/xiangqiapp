@@ -15,6 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.XiangqiApp"
         android:name=".XiangqiApplication"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="36">
 
         <!-- API Key 安全配置 -->

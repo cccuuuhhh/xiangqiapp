@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 11:46:14  
+> 最后更新：2026-08-07 11:56:45  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -21,7 +21,7 @@
 | 1 | CheckDetector（将军/将杀/困毙检测） | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | MoveGenerator（合法着法生成） | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | FEN 生成 + ICCS 坐标互转 | ✅ | 2026-08-07 10:50:22 | - |
-| 1 | 规则引擎单元测试 | ⬜ | - | 3 天 |
+| 1 | 规则引擎单元测试 | ✅ | 2026-08-07 11:56:45 | Board/MoveValidator/CheckDetector/MoveGenerator/FenConverter 共 5 文件 90+ 用例 |
 | 2 | Pikafish ARM64 交叉编译 / 获取预编译版 | 🔄 | 2026-08-07 11:46:14 | 源码已集成，CMake 已配置，待 NDK 编译验证 |
 | 2 | JNI Bridge (C++) | 🔄 | 2026-08-07 11:46:14 | 重写为进程内线程+管道模式 |
 | 2 | PikafishEngine.kt（UCI 通信封装） | 🔄 | 2026-08-07 11:46:14 | 适配进程内模式，移除双库加载 |
@@ -36,7 +36,7 @@
 | 4 | ApiKeyStore.kt（EncryptedSharedPreferences） | ✅ | 2026-08-07 11:09:52 | AES-256-GCM |
 | 4 | ApiKeySetupScreen.kt（首次启动 Key 输入） | ✅ | 2026-08-07 11:18:29 | Phase 6 UI |
 | 4 | API Key 验证逻辑 | ✅ | 2026-08-07 11:09:52 | DeepSeekApiClient.validateApiKey() |
-| 4 | SettingsScreen.kt（Key 管理） | ⬜ | - | 优化项 |
+| 4 | SettingsScreen.kt（Key 管理） | ✅ | 2026-08-07 11:56:45 | 查看/更新/删除 Key + 确认对话框 |
 | 4 | 首次启动判断 + Manifest 配置 | ✅ | 2026-08-07 11:18:29 | MainActivity ApiKeyStore 判断 |
 | 5 | GameViewModel.kt（走棋流程管理） | ✅ | 2026-08-07 11:09:52 | 全流程 + Flow 集成 |
 | 5 | GameSession.kt（对局状态） | ✅ | 2026-08-07 11:09:52 | 完整 data class |
@@ -58,7 +58,7 @@
 | 7 | DeepSeek API 测试 | ⬜ | - | - |
 | 7 | API Key 流程测试 | ⬜ | - | - |
 | 7 | UI 集成测试 | ⬜ | - | - |
-| 7 | Android 16 (API 36) 适配 | ⬜ | - | - |
+| 7 | Android 16 (API 36) 适配 | ✅ | 2026-08-07 11:56:45 | edge-to-edge + Predictive Back + 16KB page size |
 | 7 | 性能优化 | ⬜ | - | 2.5 天 |
 
 状态图例：⬜ 待开始 | 🔄 进行中 | ✅ 已完成 | ❌ 受阻
@@ -104,7 +104,26 @@
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
 
-### 2026-08-07 11:46:14 — 阻塞项处理：Pikafish 源码集成 + 悔棋完整实现
+### 2026-08-07 11:56:45 — Phase 7: 测试基础设施 + Android 16 适配 + 设置页 + NNUE 脚本
+
+- **规则引擎单元测试**（5 文件，90+ 用例）：
+  - BoardTest.kt：初始棋盘/拷贝构造/applyMove/undoMove/findKing/inBounds 等 18 个用例
+  - MoveValidatorTest.kt：7 种棋子各 4+ 个正反用例 + isInPalace/isCrossedRiver/countPiecesBetween 等 30+ 用例
+  - CheckDetectorTest.kt：isInCheck/wouldBeInCheck/isCheckmate/isStalemate/kingsFacing 等 14 个用例
+  - MoveGeneratorTest.kt：初始局面44着法/空棋盘车17着法/将军应着过滤/去重等 8 个用例
+  - FenConverterTest.kt：boardToFen/ICCS坐标互转/UCI着法/中文描述/空棋盘等 16 个用例
+
+- **AI 层单元测试**（2 文件）：
+  - DedupManagerTest.kt：添加/获取/独立缓存/MAX限制/编辑距离去重/clear 等 10 个用例
+  - PromptBuilderTest.kt：嘲讽/自夸/走棋模板/situationTags 等 8 个用例
+
+- **SettingsScreen.kt**：API Key 查看(掩码)/更新(异步验证)/删除(确认对话框)/使用说明卡片
+- **Android 16 适配**：
+  - Manifest：`enableOnBackInvokedCallback=true` (Predictive Back)
+  - CMake：`-Wl,-z,max-page-size=16384` (16KB 页大小兼容)
+  - MainActivity：已调用 `enableEdgeToEdge()`，三页面路由（SETUP/GAME/SETTINGS）
+- **NNUE 下载脚本**：`scripts/download_nnue.py` 三级回退下载源
+- **GameScreen**：新增设置图标按钮（齿轮图标→SettingsScreen）
 
 - **Pikafish 源码集成**：
   - 克隆 `official-pikafish/Pikafish` 源码到 `vendor/pikafish/`（101 个 .cpp/.h 源文件）

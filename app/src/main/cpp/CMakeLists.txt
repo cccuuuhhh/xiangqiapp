@@ -155,6 +155,11 @@ target_compile_options(pikafish_bridge PRIVATE
     -O2
 )
 
+# Android 16 16KB 页大小兼容
+target_link_options(pikafish_bridge PRIVATE
+    -Wl,-z,max-page-size=16384
+)
+
 # 链接：JNI Bridge → Wrapper → Pikafish Static → log
 target_link_libraries(pikafish_bridge
     pikafish_wrapper
