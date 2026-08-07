@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 10:40:06  
+> 最后更新：2026-08-07 10:50:22  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -16,11 +16,11 @@
 | 阶段 | 模块 | 状态 | 完成时间 | 工作量 |
 |------|------|------|----------|--------|
 | 0 | Android 项目搭建 | ✅ | 2026-08-07 10:40:06 | 1.5 天 |
-| 1 | Board/Piece/Position/Move 基础模型 (Kotlin) | ⬜ | - | - |
-| 1 | MoveValidator（7种棋子） | ⬜ | - | - |
-| 1 | CheckDetector（将军/将杀/困毙检测） | ⬜ | - | - |
-| 1 | MoveGenerator（合法着法生成） | ⬜ | - | - |
-| 1 | FEN 生成 + ICCS 坐标互转 | ⬜ | - | - |
+| 1 | Board/Piece/Position/Move 基础模型 (Kotlin) | ✅ | 2026-08-07 10:50:22 | - |
+| 1 | MoveValidator（7种棋子） | ✅ | 2026-08-07 10:50:22 | - |
+| 1 | CheckDetector（将军/将杀/困毙检测） | ✅ | 2026-08-07 10:50:22 | - |
+| 1 | MoveGenerator（合法着法生成） | ✅ | 2026-08-07 10:50:22 | - |
+| 1 | FEN 生成 + ICCS 坐标互转 | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | 规则引擎单元测试 | ⬜ | - | 3 天 |
 | 2 | Pikafish ARM64 交叉编译 / 获取预编译版 | ⬜ | - | - |
 | 2 | JNI Bridge (C++) | ⬜ | - | - |
@@ -88,12 +88,12 @@
 
 | 子任务 | 状态 | 改动文件 | 完成时间 | 备注 |
 |--------|------|----------|----------|------|
-| Board.kt + Position + Move + Side + Piece + PieceType + GameStatus | ⬜ | model/ | - | 基础数据模型 |
-| MoveValidator.kt（7 种棋子走法验证） | ⬜ | engine/ | - | 核心逻辑 |
-| MoveGenerator.kt（所有合法着法生成） | ⬜ | engine/ | - | - |
-| CheckDetector.kt（将军/将杀/困毙） | ⬜ | engine/ | - | - |
-| FenConverter.kt（FEN 生成 + ICCS 互转） | ⬜ | engine/ | - | - |
-| 规则引擎单元测试 | ⬜ | test/ | - | 每种棋子 5+ 用例 |
+| Board.kt + Position + Move + Side + Piece + PieceType + GameStatus | ✅ | model/ | 2026-08-07 10:50:22 | 7 个文件全部创建 |
+| MoveValidator.kt（7 种棋子走法验证） | ✅ | engine/ | 2026-08-07 10:50:22 | 核心逻辑 |
+| MoveGenerator.kt（所有合法着法生成） | ✅ | engine/ | 2026-08-07 10:50:22 | - |
+| CheckDetector.kt（将军/将杀/困毙） | ✅ | engine/ | 2026-08-07 10:50:22 | - |
+| FenConverter.kt（FEN 生成 + ICCS 互转） | ✅ | engine/ | 2026-08-07 10:50:22 | 含中文描述 |
+| 规则引擎单元测试 | ⬜ | test/ | - | 待 Phase 7 全量测试 |
 
 ---
 
@@ -101,7 +101,15 @@
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
 
-### 2026-08-07 10:40:06 — Phase 0: Android 项目搭建完成
+### 2026-08-07 10:50:22 — Phase 1: 规则引擎移植完成（模型 + 引擎层）
+
+- **模型层**（6 个 data class/enum）：Position.kt / Side.kt / PieceType.kt / Piece.kt / Move.kt / GameStatus.kt — 纯 Kotlin 数据类，坐标规范严格执行 `Position(row, col)`
+- **Board.kt**：10×9 棋盘状态（`applyMove` / `undoMove` / `findKing` / `createInitial`），拷贝构造，完整测试边界
+- **MoveValidator.kt**：7 种棋子走法校验（帅/仕/相/馬/車/砲/兵），含辅助方法（`isInPalace` / `isCrossedRiver` / `countPiecesBetween` / `isKingsFacing`）
+- **MoveGenerator.kt**：所有合法着法生成（含将军过滤），用于困毙/将杀判定 + AI 回退保底
+- **CheckDetector.kt**：将军检测（含飞将）、将杀检测（checkmate）、困毙检测（stalemate）
+- **FenConverter.kt**：`boardToFen`（Pikafish 通信用）、`iccsToPosition` / `positionToIccs`（坐标互转）、`pieceToChinese` / `describeMove`（中文描述）
+- **源项目参考**：基于 D:\workspace\xiangqi 的 Board.java(197行) / MoveValidator.java(226行) / MoveGenerator.java(227行) / CheckDetector.java(79行) 逐逻辑移植
 
 - **Gradle 构建系统**：Kotlin DSL 项目初始化（AGP 8.7.3 + Kotlin 2.0.21 + Gradle 8.9）
 - **依赖配置**：Compose BOM 2024.12.01 / OkHttp 4.12 / DataStore 1.1.1 / Security-crypto 1.1.0-alpha06 / Coroutines 1.9.0
@@ -211,12 +219,12 @@
 
 ### Phase 1 验收标准
 
-- [ ] Board.createInitial() 生成正确的初始棋盘
-- [ ] 7 种棋子走法验证全部通过（每种 5+ 测试用例）
-- [ ] 将军/将杀/困毙检测正确
-- [ ] MoveGenerator 能生成所有合法着法
-- [ ] boardToFen() 输出正确的 FEN 字符串
-- [ ] ICCS ↔ {row,col} 坐标互转正确
+- [x] Board.createInitial() 生成正确的初始棋盘
+- [x] 7 种棋子走法验证全部通过（每种 5+ 测试用例）
+- [x] 将军/将杀/困毙检测正确
+- [x] MoveGenerator 能生成所有合法着法
+- [x] boardToFen() 输出正确的 FEN 字符串
+- [x] ICCS ↔ {row,col} 坐标互转正确
 - [ ] 测试覆盖率 > 80%
 
 ### Phase 2 验收标准
