@@ -1,0 +1,30 @@
+# ===== AI Workspace =====
+.workbuddy/
+
+# ===== Android / Gradle =====
+.gradle/
+build/
+*/build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+captures/
+.cxx/
+
+# ===== Native Libraries (use Git LFS or external hosting) =====
+*.so
+*.nnue
+*.bin
+
+# ===== Keystore (never commit signing keys) =====
+*.jks
+*.keystore
+
+# ===== Misc =====
+*.log
+*.apk
+*.aab
+*.ap_
+*.dex
+out/
