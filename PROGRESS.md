@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 10:50:22  
+> 最后更新：2026-08-07 10:54:37  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -41,7 +41,7 @@
 | 5 | GameViewModel.kt（走棋流程管理） | ⬜ | - | - |
 | 5 | GameSession.kt（对局状态） | ⬜ | - | - |
 | 5 | TrashTalkTrigger.kt（嘲讽/自夸触发） | ⬜ | - | - |
-| 5 | PersonalityManager.kt + personalities.json | ⬜ | - | - |
+| 5 | PersonalityManager.kt + personalities.json | ✅ | 2026-08-07 10:54:37 | - |
 | 5 | 悔棋逻辑 + Flow 集成 | ⬜ | - | 2 天 |
 | 6 | ChessBoardCanvas.kt（Compose Canvas 棋盘绘制） | ⬜ | - | - |
 | 6 | ChessBoardGesture.kt（触摸交互） | ⬜ | - | - |
@@ -100,6 +100,12 @@
 ## 已完成记录
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
+
+### 2026-08-07 10:54:37 — Phase 5: 性格管理模块完成
+
+- **PersonalityManager.kt**：5 种对话性格加载/切换，含 assets 降级回退到硬编码默认配置
+- **personalities.json**：毒舌大师 / 优雅绅士 / 中二少年 / 禅意大师 / 沉默杀手，5 种性格 systemPrompt + trashTalkFrequency + exampleLines 完整配置
+- **参考源项目**：PersonalityService.java + personalities.yaml → Kotlin + JSON
 
 ### 2026-08-07 10:50:22 — Phase 1: 规则引擎移植完成（模型 + 引擎层）
 
@@ -305,8 +311,8 @@
 | AIService.java | 382 | DeepSeekApiClient.kt + PromptBuilder.kt | ⬜ |
 | GameService.java | 298 | GameViewModel.kt | ⬜ |
 | SseService.java | 171 | （删除，Kotlin Flow 替代） | ⬜ |
-| PersonalityService.java | - | PersonalityManager.kt | ⬜ |
-| personalities.yaml | - | personalities.json | ⬜ |
+| PersonalityService.java | - | PersonalityManager.kt | ✅ |
+| personalities.yaml | - | personalities.json | ✅ |
 | ChessBoard.vue | - | ChessBoardCanvas.kt | ⬜ |
 | ChatPanel.vue + ChatBubble.vue | - | TrashTalkPanel.kt | ⬜ |
 | ControlPanel.vue | - | ControlPanel.kt | ⬜ |
