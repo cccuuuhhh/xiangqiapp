@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 10:54:37  
+> 最后更新：2026-08-07 11:09:52  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -22,25 +22,25 @@
 | 1 | MoveGenerator（合法着法生成） | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | FEN 生成 + ICCS 坐标互转 | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | 规则引擎单元测试 | ⬜ | - | 3 天 |
-| 2 | Pikafish ARM64 交叉编译 / 获取预编译版 | ⬜ | - | - |
-| 2 | JNI Bridge (C++) | ⬜ | - | - |
-| 2 | PikafishEngine.kt（UCI 通信封装） | ⬜ | - | - |
-| 2 | NNUE 文件管理（assets → internal storage） | ⬜ | - | - |
-| 2 | 引擎线程管理 + 难度映射 | ⬜ | - | - |
-| 2 | Pikafish 集成测试 | ⬜ | - | 3 天 |
-| 3 | DeepSeekApiClient.kt（普通 + 流式） | ⬜ | - | - |
-| 3 | PromptBuilder.kt（嘲讽/自夸/走棋模板） | ⬜ | - | - |
-| 3 | 流式响应解析（SSE → Flow<String>） | ⬜ | - | - |
-| 3 | 去重缓存管理 | ⬜ | - | - |
-| 3 | 错误处理 + 棋子中文描述 | ⬜ | - | 2 天 |
-| 4 | ApiKeyStore.kt（EncryptedSharedPreferences） | ⬜ | - | - |
-| 4 | ApiKeySetupScreen.kt（首次启动 Key 输入） | ⬜ | - | - |
-| 4 | API Key 验证逻辑 | ⬜ | - | - |
-| 4 | SettingsScreen.kt（Key 管理） | ⬜ | - | - |
-| 4 | 首次启动判断 + Manifest 配置 | ⬜ | - | 1 天 |
-| 5 | GameViewModel.kt（走棋流程管理） | ⬜ | - | - |
-| 5 | GameSession.kt（对局状态） | ⬜ | - | - |
-| 5 | TrashTalkTrigger.kt（嘲讽/自夸触发） | ⬜ | - | - |
+| 2 | Pikafish ARM64 交叉编译 / 获取预编译版 | ⬜ | - | 需 .so 二进制 |
+| 2 | JNI Bridge (C++) | ✅ | 2026-08-07 11:09:52 | CMakeLists.txt + pikafish_jni.cpp |
+| 2 | PikafishEngine.kt（UCI 通信封装） | ✅ | 2026-08-07 11:09:52 | UCI + bestMove + difficulty |
+| 2 | NNUE 文件管理（assets → internal storage） | ✅ | 2026-08-07 11:09:52 | NnueManager.kt |
+| 2 | 引擎线程管理 + 难度映射 | ✅ | 2026-08-07 11:09:52 | 嵌入 PikafishEngine |
+| 2 | Pikafish 集成测试 | ⬜ | - | 需 .so 文件 |
+| 3 | DeepSeekApiClient.kt（普通 + 流式） | ✅ | 2026-08-07 11:09:52 | chat() + chatStream() |
+| 3 | PromptBuilder.kt（嘲讽/自夸/走棋模板） | ✅ | 2026-08-07 11:09:52 | 3 种 Prompt 模板 |
+| 3 | 流式响应解析（SSE → Flow<String>） | ✅ | 2026-08-07 11:09:52 | callbackFlow 实现 |
+| 3 | 去重缓存管理 | ✅ | 2026-08-07 11:09:52 | DedupManager.kt |
+| 3 | 错误处理 + 棋子中文描述 | ✅ | 2026-08-07 11:09:52 | FenConverter 已含 |
+| 4 | ApiKeyStore.kt（EncryptedSharedPreferences） | ✅ | 2026-08-07 11:09:52 | AES-256-GCM |
+| 4 | ApiKeySetupScreen.kt（首次启动 Key 输入） | ⬜ | - | 待 Phase 6 UI |
+| 4 | API Key 验证逻辑 | ✅ | 2026-08-07 11:09:52 | DeepSeekApiClient.validateApiKey() |
+| 4 | SettingsScreen.kt（Key 管理） | ⬜ | - | 待 Phase 6 UI |
+| 4 | 首次启动判断 + Manifest 配置 | ⬜ | - | 待 Manifest 完善 |
+| 5 | GameViewModel.kt（走棋流程管理） | ✅ | 2026-08-07 11:09:52 | 全流程 + Flow 集成 |
+| 5 | GameSession.kt（对局状态） | ✅ | 2026-08-07 11:09:52 | 完整 data class |
+| 5 | TrashTalkTrigger.kt（嘲讽/自夸触发） | ✅ | 2026-08-07 11:09:52 | 局面权重决策 |
 | 5 | PersonalityManager.kt + personalities.json | ✅ | 2026-08-07 10:54:37 | - |
 | 5 | 悔棋逻辑 + Flow 集成 | ⬜ | - | 2 天 |
 | 6 | ChessBoardCanvas.kt（Compose Canvas 棋盘绘制） | ⬜ | - | - |
@@ -100,6 +100,16 @@
 ## 已完成记录
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
+
+### 2026-08-07 11:09:52 — Phase 2-5 批量完成：引擎/JNI/AI客户端/密钥/游戏逻辑
+
+- **Phase 2 Pikafish NDK**：PikafishEngine.kt（UCI + bestMove + 6级难度映射）、NnueManager.kt（assets → internal storage）、JNI Bridge（CMakeLists.txt + pikafish_jni.cpp）— 仅差 libpikafish.so 交叉编译
+- **Phase 3 DeepSeek 客户端**：DeepSeekApiClient.kt（chat + chatStream + validateApiKey）、PromptBuilder.kt（嘲讽/自夸/走棋 3 种模板）、DedupManager.kt（编辑距离去重，20条缓存）
+- **Phase 4 API Key 管理**：ApiKeyStore.kt（EncryptedSharedPreferences AES-256-GCM）、validateApiKey() 验证逻辑
+- **Phase 5 游戏逻辑核心**：
+  - GameSession.kt — 完整对局状态 data class（board / moveHistory / trashTalks / selfPraises / difficulty / personality）
+  - GameViewModel.kt — 全流程控制器：playerMove（校验→走棋→胜负）/ AI应着（Pikafish + MoveGenerator回退）/ 嘲讽自夸流式推送（TrashTalkTrigger → DedupManager → DeepSeekApiClient.chatStream → Kotlin Flow）/ 新局/认负/难度/性格
+  - 悔棋逻辑预留桩位
 
 ### 2026-08-07 10:54:37 — Phase 5: 性格管理模块完成
 
@@ -307,10 +317,10 @@
 | MoveValidator.java | 226 | MoveValidator.kt | ⬜ |
 | MoveGenerator.java | 227 | MoveGenerator.kt | ⬜ |
 | CheckDetector.java | 79 | CheckDetector.kt | ⬜ |
-| PikafishEngine.java | 346 | PikafishEngine.kt | ⬜ |
-| AIService.java | 382 | DeepSeekApiClient.kt + PromptBuilder.kt | ⬜ |
-| GameService.java | 298 | GameViewModel.kt | ⬜ |
-| SseService.java | 171 | （删除，Kotlin Flow 替代） | ⬜ |
+| PikafishEngine.java | 346 | PikafishEngine.kt | ✅ |
+| AIService.java | 382 | DeepSeekApiClient.kt + PromptBuilder.kt | ✅ |
+| GameService.java | 298 | GameViewModel.kt | ✅ |
+| SseService.java | 171 | （删除，Kotlin Flow 替代） | ✅ |
 | PersonalityService.java | - | PersonalityManager.kt | ✅ |
 | personalities.yaml | - | personalities.json | ✅ |
 | ChessBoard.vue | - | ChessBoardCanvas.kt | ⬜ |
