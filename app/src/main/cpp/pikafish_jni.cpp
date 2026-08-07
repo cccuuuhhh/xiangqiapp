@@ -1,103 +1,63 @@
 /**
- * Pikafish JNI Bridge — Native Interface
+ * Pikafish JNI Bridge — In-Process Android Integration
  *
- * 话唠棋王 B+ 方案：通过 JNI 与 libpikafish.so 通信，使用 UCI 协议。
- * 采用 pipe + fork 模式，将引擎的 stdin/stdout 重定向到管道的读写端。
+ * 话唠棋王 B+ 方案：通过 pikafish_wrapper 与 Pikafish 引擎进程内通信。
+ * 不再使用 fork/exec（Android 不支持），改为线程 + 管道模式。
  *
  * JNI 函数命名规则：Java_com_hualao_qiwang_ai_PikafishEngine_*
  */
 
 #include <jni.h>
 #include <string>
-#include <unistd.h>
-#include <sys/types.h>
 #include <android/log.h>
+
+#include "pikafish_wrapper.h"
 
 #define LOG_TAG "PikafishJNI"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-// 管道文件描述符
-static int g_stdin_pipe[2] = {-1, -1};   // 写入 -> 引擎 stdin
-static int g_stdout_pipe[2] = {-1, -1};  // 引擎 stdout -> 读取
-static pid_t g_engine_pid = -1;
 static bool g_initialized = false;
 
 /**
- * 初始化引擎：创建管道，fork 进程
- * 参数: nnuePath - pikafish.nnue 文件路径
+ * 初始化引擎：启动 Pikafish 线程，完成 UCI 握手。
+ *
+ * @param nnuePath   pikafish.nnue 权重文件完整路径
+ * @param enginePath 保留参数（进程内模式不需要二进制路径）
  */
 extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_hualao_qiwang_ai_PikafishEngine_nativeInit(
         JNIEnv *env,
         jobject /* this */,
-        jstring nnuePath,
-        jstring enginePath) {
+        jstring nnuePath) {
 
     if (g_initialized) {
         LOGD("Engine already initialized");
         return JNI_TRUE;
     }
 
-    const char *nnue = env->GetStringUTFChars(nnuePath, nullptr);
-    const char *engine = env->GetStringUTFChars(enginePath, nullptr);
+    const char *nnue = nnuePath != nullptr
+        ? env->GetStringUTFChars(nnuePath, nullptr)
+        : nullptr;
 
-    LOGD("Initializing Pikafish engine: %s", engine);
-    LOGD("NNUE file: %s", nnue);
+    LOGD("Initializing Pikafish engine (in-process)");
+    LOGD("NNUE file: %s", nnue ? nnue : "(none/embedded)");
 
-    // 创建管道
-    if (pipe(g_stdin_pipe) < 0 || pipe(g_stdout_pipe) < 0) {
-        LOGE("Failed to create pipes");
+    bool success = pikafish_init(nnue ? nnue : "");
+
+    if (nnue) {
         env->ReleaseStringUTFChars(nnuePath, nnue);
-        env->ReleaseStringUTFChars(enginePath, engine);
-        return JNI_FALSE;
     }
 
-    // Fork 引擎进程
-    pid_t pid = fork();
-    if (pid < 0) {
-        LOGE("Fork failed");
-        env->ReleaseStringUTFChars(nnuePath, nnue);
-        env->ReleaseStringUTFChars(enginePath, engine);
-        return JNI_FALSE;
+    if (success) {
+        g_initialized = true;
+        LOGD("Pikafish engine initialized successfully");
+    } else {
+        LOGE("Pikafish engine initialization failed");
     }
 
-    if (pid == 0) {
-        // ─── 子进程：运行 Pikafish 引擎 ───
-
-        // 重定向 stdin/stdout 到管道
-        dup2(g_stdin_pipe[0], STDIN_FILENO);
-        dup2(g_stdout_pipe[1], STDOUT_FILENO);
-
-        // 关闭不需要的管道端
-        close(g_stdin_pipe[1]);
-        close(g_stdout_pipe[0]);
-
-        // 设置环境变量指定 NNUE 文件
-        setenv("PIKAFISH_NNUE", nnue, 1);
-
-        // 启动引擎
-        execl(engine, "pikafish", nullptr);
-
-        // execl 失败
-        LOGE("Failed to exec pikafish engine");
-        _exit(1);
-    }
-
-    // ─── 父进程 ───
-    g_engine_pid = pid;
-    g_initialized = true;
-
-    // 关闭不需要的管道端
-    close(g_stdin_pipe[0]);
-    close(g_stdout_pipe[1]);
-
-    env->ReleaseStringUTFChars(nnuePath, nnue);
-    env->ReleaseStringUTFChars(enginePath, engine);
-
-    LOGD("Pikafish engine started, pid=%d", pid);
-    return JNI_TRUE;
+    return success ? JNI_TRUE : JNI_FALSE;
 }
 
 /**
@@ -118,16 +78,14 @@ Java_com_hualao_qiwang_ai_PikafishEngine_nativeSend(
     const char *cmd = env->GetStringUTFChars(command, nullptr);
     LOGD("Sending: %s", cmd);
 
-    std::string cmdStr(cmd);
-    cmdStr += "\n";
-    write(g_stdin_pipe[1], cmdStr.c_str(), cmdStr.length());
+    pikafish_send(cmd);
 
     env->ReleaseStringUTFChars(command, cmd);
 }
 
 /**
- * 从引擎读取一行响应
- * 返回: 响应字符串，超时返回空字符串
+ * 从引擎读取一行响应（阻塞）
+ * 返回: 响应字符串，无数据时返回空字符串
  */
 extern "C"
 JNIEXPORT jstring JNICALL
@@ -140,28 +98,18 @@ Java_com_hualao_qiwang_ai_PikafishEngine_nativeReadLine(
         return env->NewStringUTF("");
     }
 
-    char buffer[4096];
-    int pos = 0;
-
-    while (pos < 4095) {
-        char c;
-        ssize_t n = read(g_stdout_pipe[0], &c, 1);
-        if (n <= 0) {
-            break;
-        }
-        if (c == '\n') {
-            break;
-        }
-        buffer[pos++] = c;
+    char *line = pikafish_read_line();
+    if (!line) {
+        return env->NewStringUTF("");
     }
-    buffer[pos] = '\0';
 
-    LOGD("Received: %s", buffer);
-    return env->NewStringUTF(buffer);
+    jstring result = env->NewStringUTF(line);
+    free(line);
+    return result;
 }
 
 /**
- * 销毁引擎：发送 quit 命令，等待进程退出，清理资源
+ * 销毁引擎：发送 quit，等待线程退出，清理资源
  */
 extern "C"
 JNIEXPORT void JNICALL
@@ -174,19 +122,8 @@ Java_com_hualao_qiwang_ai_PikafishEngine_nativeDestroy(
     }
 
     LOGD("Destroying Pikafish engine");
+    pikafish_destroy();
 
-    // 发送 quit 命令
-    const char *quitCmd = "quit\n";
-    write(g_stdin_pipe[1], quitCmd, strlen(quitCmd));
-
-    // 关闭管道
-    close(g_stdin_pipe[1]);
-    close(g_stdout_pipe[0]);
-
-    g_stdin_pipe[0] = g_stdin_pipe[1] = -1;
-    g_stdout_pipe[0] = g_stdout_pipe[1] = -1;
-    g_engine_pid = -1;
     g_initialized = false;
-
     LOGD("Pikafish engine destroyed");
 }

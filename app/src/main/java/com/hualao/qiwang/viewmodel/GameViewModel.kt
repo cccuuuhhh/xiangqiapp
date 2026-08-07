@@ -139,6 +139,7 @@ class GameViewModel(context: Context) : ViewModel() {
             lastMove = move,
             moveHistory = s.moveHistory + uci,
             playerMoveHistory = s.playerMoveHistory + moveDesc,
+            moveRecords = s.moveRecords + move,
             gameStatus = aiStatus
         )
 
@@ -153,18 +154,61 @@ class GameViewModel(context: Context) : ViewModel() {
     }
 
     /**
-     * 悔棋：撤回玩家和 AI 各一步。
+     * 悔棋：撤回 AI 和玩家各一步（或仅撤回玩家一步）。
+     *
+     * 逻辑：
+     * - 正常对局中（AI 刚走完）→ 撤回 AI + 玩家共 2 步
+     * - 玩家走棋即终局 → 仅撤回玩家 1 步
+     * - 棋盘状态通过 board.undoMove() 还原
      */
     fun undo() {
         val s = _session.value
-        if (s.moveHistory.size < 2) {
+        val records = s.moveRecords
+
+        if (records.isEmpty()) {
             emitError("无棋可悔")
             return
         }
+        if (_aiThinking.value || _isStreaming.value) {
+            emitError("AI 正在思考中，请稍候")
+            return
+        }
 
-        // TODO: 需要存储走棋记录以便悔棋
-        // 当前简化实现：仅允许 AI 回合前悔棋
-        emitError("悔棋功能开发中")
+        // 确定撤销步数：最后一步是 AI 则撤 2 步，否则撤 1 步（玩家终局）
+        val lastIsAi = records.last().piece.startsWith("b")
+        val undoCount = if (lastIsAi && records.size >= 2) 2 else 1
+
+        // 从后往前逐步撤销棋盘状态
+        val undoMoves = records.takeLast(undoCount)
+        for (move in undoMoves.reversed()) {
+            s.board.undoMove(move, move.captured)
+        }
+
+        val playerStepsToRemove = undoMoves.count { it.piece.startsWith("r") }
+        val aiStepsToRemove = undoMoves.count { it.piece.startsWith("b") }
+
+        // 清理流式状态
+        _streamingText.value = ""
+        _isStreaming.value = false
+        _streamType.value = StreamType.NONE
+
+        // 更新 session — 回退所有历史记录
+        _session.value = s.copy(
+            board = s.board,
+            currentSide = Side.RED,
+            gameStatus = GameStatus.PLAYING,
+            moveHistory = s.moveHistory.dropLast(undoCount),
+            playerMoveHistory = s.playerMoveHistory.dropLast(playerStepsToRemove),
+            aiMoveHistory = s.aiMoveHistory.dropLast(aiStepsToRemove),
+            lastMove = records.getOrNull(records.size - undoCount - 1),
+            moveRecords = records.dropLast(undoCount),
+            trashTalks = if (aiStepsToRemove > 0 && s.trashTalks.isNotEmpty())
+                s.trashTalks.dropLast(1) else s.trashTalks,
+            selfPraises = if (aiStepsToRemove > 0 && s.selfPraises.isNotEmpty())
+                s.selfPraises.dropLast(1) else s.selfPraises,
+            moveCount = (s.moveCount - aiStepsToRemove).coerceAtLeast(0),
+            totalMoves = (s.totalMoves - undoCount).coerceAtLeast(0)
+        )
     }
 
     /**
@@ -270,6 +314,7 @@ class GameViewModel(context: Context) : ViewModel() {
             lastMove = finalMove,
             moveHistory = s.moveHistory + uci,
             aiMoveHistory = s.aiMoveHistory + moveDesc,
+            moveRecords = s.moveRecords + finalMove,
             gameStatus = gameStatus,
             moveCount = s.moveCount + 1,
             totalMoves = s.totalMoves + 1

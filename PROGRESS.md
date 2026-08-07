@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 11:18:29  
+> 最后更新：2026-08-07 11:46:14  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -22,9 +22,9 @@
 | 1 | MoveGenerator（合法着法生成） | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | FEN 生成 + ICCS 坐标互转 | ✅ | 2026-08-07 10:50:22 | - |
 | 1 | 规则引擎单元测试 | ⬜ | - | 3 天 |
-| 2 | Pikafish ARM64 交叉编译 / 获取预编译版 | ⬜ | - | 需 .so 二进制 |
-| 2 | JNI Bridge (C++) | ✅ | 2026-08-07 11:09:52 | CMakeLists.txt + pikafish_jni.cpp |
-| 2 | PikafishEngine.kt（UCI 通信封装） | ✅ | 2026-08-07 11:09:52 | UCI + bestMove + difficulty |
+| 2 | Pikafish ARM64 交叉编译 / 获取预编译版 | 🔄 | 2026-08-07 11:46:14 | 源码已集成，CMake 已配置，待 NDK 编译验证 |
+| 2 | JNI Bridge (C++) | 🔄 | 2026-08-07 11:46:14 | 重写为进程内线程+管道模式 |
+| 2 | PikafishEngine.kt（UCI 通信封装） | 🔄 | 2026-08-07 11:46:14 | 适配进程内模式，移除双库加载 |
 | 2 | NNUE 文件管理（assets → internal storage） | ✅ | 2026-08-07 11:09:52 | NnueManager.kt |
 | 2 | 引擎线程管理 + 难度映射 | ✅ | 2026-08-07 11:09:52 | 嵌入 PikafishEngine |
 | 2 | Pikafish 集成测试 | ⬜ | - | 需 .so 文件 |
@@ -42,7 +42,7 @@
 | 5 | GameSession.kt（对局状态） | ✅ | 2026-08-07 11:09:52 | 完整 data class |
 | 5 | TrashTalkTrigger.kt（嘲讽/自夸触发） | ✅ | 2026-08-07 11:09:52 | 局面权重决策 |
 | 5 | PersonalityManager.kt + personalities.json | ✅ | 2026-08-07 10:54:37 | - |
-| 5 | 悔棋逻辑 + Flow 集成 | ⬜ | - | 2 天 |
+| 5 | 悔棋逻辑 + Flow 集成 | ✅ | 2026-08-07 11:46:14 | GameSession.moveRecords + undo() 完整实现 |
 | 6 | ChessBoardCanvas.kt（Compose Canvas 棋盘绘制） | ✅ | 2026-08-07 11:18:29 | - |
 | 6 | ChessBoardGesture.kt（触摸交互） | ✅ | 2026-08-07 11:18:29 | 已整合到 ChessBoardCanvas |
 | 6 | 走子动画 | ✅ | 2026-08-07 11:18:29 | animateFloatAsState 300ms |
@@ -104,7 +104,26 @@
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
 
-### 2026-08-07 11:18:29 — Phase 6: UI 层全部完成
+### 2026-08-07 11:46:14 — 阻塞项处理：Pikafish 源码集成 + 悔棋完整实现
+
+- **Pikafish 源码集成**：
+  - 克隆 `official-pikafish/Pikafish` 源码到 `vendor/pikafish/`（101 个 .cpp/.h 源文件）
+  - 创建 `pikafish_wrapper.h/.cpp`：进程内引擎包装器（线程 + 管道 I/O，替代 fork/exec）
+  - 重写 `pikafish_jni.cpp`：JNI 桥接层适配新架构（nativeInit 简化为单参数）
+  - 重写 `CMakeLists.txt`：Pikafish 静态库 + Wrapper + JNI Bridge 三层编译
+    - ARM64 编译标志：`IS_64BIT USE_PREFETCH USE_POPCNT USE_NEON NO_PEXT`
+    - C++17 标准 + O3 优化 + LTO
+  - 更新 `PikafishEngine.kt`：单库加载 `libpikafish_bridge.so`，init() 由 Wrapper 全自动完成
+  - NNUE 权重文件待下载（`pikafish.nnue` ~30MB，需网络较好的环境）
+
+- **悔棋完整实现**：
+  - `GameSession` 新增 `moveRecords: List<Move>` 字段（含 captured 信息）
+  - `GameViewModel.undo()` 完整实现：
+    - 正常对局（AI 刚走完）→ 撤回 AI + 玩家共 2 步
+    - 玩家走棋即终局 → 仅撤回玩家 1 步
+    - 棋盘状态通过 `board.undoMove()` 逐步还原
+    - 同步回退 moveHistory / playerMoveHistory / aiMoveHistory / trashTalks / selfPraises
+  - 边界处理：AI 思考中/流式输出中不允许悔棋
 
 - **ChessBoardCanvas.kt**：Compose Canvas 绘制 10×9 棋盘（网格线、楚河汉界、九宫斜线、32 枚棋子楷体渲染）、选中高亮（半透明金）、合法走法提示（半透明绿点）、最后一步标记、将军警告（半透红晕圈）、触摸选子/走子手势（detectTapGestures + 坐标转换）、300ms 过渡动画
 - **TrashTalkPanel.kt**：流式嘲讽/自夸面板，LazyColumn 消息列表、紫色嘲讽气泡 vs 金色自夸气泡（RoundedCornerShape 对话形状）、打字机光标闪烁、性格头像+名称+说话风格标识栏、AI 思考指示器、自动滚动到底部、空状态提示

@@ -4,22 +4,21 @@ import android.content.Context
 import com.hualao.qiwang.engine.FenConverter
 import com.hualao.qiwang.model.Board
 import com.hualao.qiwang.model.Move
-import com.hualao.qiwang.model.Position
 import com.hualao.qiwang.model.Side
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.util.regex.Pattern
 
 /**
- * Pikafish 中国象棋引擎封装 — 通过 JNI 与 libpikafish.so 通信。
+ * Pikafish 中国象棋引擎封装 — 进程内 JNI 模式。
  *
- * UCI 协议通信流程：
- * 1. init() → uci → uciok
- * 2. setoption name Threads/Hash/Skill Level
- * 3. isready → readyok
- * 4. position fen <fen>
- * 5. go depth <n> → bestmove <move>
+ * 引擎通过 pikafish_wrapper（线程 + 管道）运行在应用进程内，
+ * 不再使用 fork/exec（Android 不支持）。
+ *
+ * UCI 协议通信流程（由 Native Wrapper 自动完成）：
+ * 1. pikafish_init() → uci → uciok → setoption → isready → readyok
+ * 2. position fen <fen>
+ * 3. go depth <n> → bestmove <move>
  *
  * 引擎必须在 IO 线程（Dispatchers.IO）运行。
  * 参考源项目：PikafishEngine.java (346行)
@@ -29,7 +28,7 @@ class PikafishEngine(private val context: Context) {
     companion object {
         private val BESTMOVE_PATTERN = Pattern.compile("bestmove\\s+([a-i]\\d)([a-i]\\d)")
 
-        // 难度映射
+        /** 难度映射：等级 → (Skill Level, Depth) */
         data class DifficultyConfig(val skillLevel: Int, val depth: Int)
 
         val DIFFICULTY_MAP = mapOf(
@@ -61,49 +60,27 @@ class PikafishEngine(private val context: Context) {
     /** 当前难度等级 */
     private var currentDifficulty: Int = 3
 
-    /** 引擎可执行文件路径 */
-    private var enginePath: String = ""
-
     // ==================== 生命周期 ====================
 
     /**
-     * 初始化引擎：加载 .so，复制 NNUE 文件，启动引擎进程。
+     * 初始化引擎。
+     *
+     * Native Wrapper 自动完成：
+     * - 创建管道 + 启动引擎线程
+     * - UCI 握手（uci → uciok）
+     * - 设置 Threads/Hash/EvalFile
+     * - isready → readyok
+     *
      * 必须在 IO 线程调用。
      */
     suspend fun init(): Boolean = withContext(Dispatchers.IO) {
         try {
-            // 1. 确定引擎路径
-            enginePath = resolveEngineBinary()
-
-            // 2. 确定 NNUE 路径
             val nnuePath = NnueManager.getNnuePath(context)
 
-            // 3. 通过 JNI 初始化引擎
-            val success = nativeInit(nnuePath, enginePath)
-            if (!success) {
-                isReady = false
-                return@withContext false
-            }
-
-            // 4. UCI 握手
-            if (!sendAndWait("uci", "uciok")) {
-                isReady = false
-                return@withContext false
-            }
-
-            // 5. 配置引擎参数
-            sendCommand("setoption name Threads value $threads")
-            sendCommand("setoption name Hash value $hash")
-            sendCommand("setoption name Skill Level value 20")
-
-            // 6. 同步确认就绪
-            if (!sendAndWait("isready", "readyok")) {
-                isReady = false
-                return@withContext false
-            }
-
-            isReady = true
-            true
+            // Native Wrapper 完成全部初始化（UCI 握手、选项配置、就绪确认）
+            val success = nativeInit(nnuePath)
+            isReady = success
+            success
         } catch (e: Exception) {
             isReady = false
             false
@@ -163,7 +140,7 @@ class PikafishEngine(private val context: Context) {
     }
 
     /**
-     * 设置难度
+     * 设置难度 (0-5)
      */
     fun setDifficulty(level: Int) {
         val clamped = level.coerceIn(0, MAX_DIFFICULTY)
@@ -175,7 +152,7 @@ class PikafishEngine(private val context: Context) {
     }
 
     /**
-     * 销毁引擎
+     * 销毁引擎（发送 quit，等待线程退出，清理资源）
      */
     fun destroy() {
         isReady = false
@@ -185,48 +162,28 @@ class PikafishEngine(private val context: Context) {
     // ==================== 内部方法 ====================
 
     /**
-     * 发送命令并等待特定响应
-     */
-    private fun sendAndWait(command: String, expectedResponse: String): Boolean {
-        sendCommand(command)
-        var line: String
-        while (true) {
-            line = nativeReadLine()
-            if (line.isEmpty()) break
-            if (line == expectedResponse) return true
-        }
-        return false
-    }
-
-    /**
      * 向引擎发送 UCI 命令
      */
     private fun sendCommand(command: String) {
         nativeSend(command)
     }
 
-    /**
-     * 解析引擎可执行文件路径
-     */
-    private fun resolveEngineBinary(): String {
-        // 从 jniLibs 中加载的 .so 文件路径
-        // 实际引擎二进制由 CMake 编译后自动部署
-        return context.applicationInfo.nativeLibraryDir + "/libpikafish.so"
-    }
-
     // ==================== JNI Native Methods ====================
 
-    private external fun nativeInit(nnuePath: String, enginePath: String): Boolean
+    /**
+     * 初始化引擎（Native Wrapper 自动完成 UCI 握手）
+     * @param nnuePath pikafish.nnue 权重文件路径（传空字符串使用嵌入式网络）
+     */
+    private external fun nativeInit(nnuePath: String): Boolean
     private external fun nativeSend(command: String)
     private external fun nativeReadLine(): String
     private external fun nativeDestroy()
 
     init {
         try {
-            System.loadLibrary("pikafish")
             System.loadLibrary("pikafish_bridge")
         } catch (e: UnsatisfiedLinkError) {
-            // 引擎 .so 可能尚未编译
+            // 引擎 .so 尚未编译（首次构建前）
         }
     }
 }

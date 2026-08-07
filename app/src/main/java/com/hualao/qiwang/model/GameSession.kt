@@ -45,6 +45,9 @@ data class GameSession(
     /** 当前性格配置 */
     val personality: PersonalityConfig? = null,
 
+    /** 走棋记录（含 captured，用于悔棋还原） */
+    val moveRecords: List<Move> = emptyList(),
+
     /** AI 总回合数 */
     val moveCount: Int = 0,
 
@@ -97,6 +100,7 @@ data class GameSession(
         aiMoveHistory = emptyList(),
         lastMove = null,
         capturedPieces = emptyList(),
+        moveRecords = emptyList(),
         trashTalks = emptyList(),
         selfPraises = emptyList(),
         difficulty = difficulty,
