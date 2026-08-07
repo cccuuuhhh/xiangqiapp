@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">话唠棋王</string>
+    <string name="deepseek_api_key_hint">请输入您的 DeepSeek API Key</string>
+    <string name="verify_key">验证</string>
+    <string name="key_verified">API Key 验证成功</string>
+    <string name="key_invalid">API Key 无效，请检查后重试</string>
+    <string name="start_game">开始游戏</string>
+    <string name="new_game">新局</string>
+    <string name="undo">悔棋</string>
+    <string name="resign">认负</string>
+    <string name="difficulty">难度</string>
+    <string name="settings">设置</string>
+    <string name="personality">性格</string>
+    <string name="trash_talk_disabled">API Key 无效，嘲讽功能不可用</string>
+</resources>

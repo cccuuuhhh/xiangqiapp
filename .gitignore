@@ -28,3 +28,7 @@ captures/
 *.ap_
 *.dex
 out/
+
+# ===== ProGuard mapping (release only, keep offline) =====
+*mapping.txt
+secrets.properties

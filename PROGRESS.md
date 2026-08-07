@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 10:04:42  
+> 最后更新：2026-08-07 10:40:06  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -15,7 +15,7 @@
 
 | 阶段 | 模块 | 状态 | 完成时间 | 工作量 |
 |------|------|------|----------|--------|
-| 0 | Android 项目搭建 | ⬜ | - | 1.5 天 |
+| 0 | Android 项目搭建 | ✅ | 2026-08-07 10:40:06 | 1.5 天 |
 | 1 | Board/Piece/Position/Move 基础模型 (Kotlin) | ⬜ | - | - |
 | 1 | MoveValidator（7种棋子） | ⬜ | - | - |
 | 1 | CheckDetector（将军/将杀/困毙检测） | ⬜ | - | - |
@@ -82,19 +82,35 @@
 
 ## 当前任务
 
-> 任务描述：（尚未启动开发，等待确认后启动 SOP 流程）  
-> 关联文档：development-plan.md  
-> 开始时间：-
+> 任务描述：Phase 1 — 规则引擎移植（Board/Piece/Position/Move 基础模型 + MoveValidator + CheckDetector + MoveGenerator + FEN 生成）  
+> 关联文档：development-plan.md 第四章、development-plan.md Phase 1  
+> 开始时间：2026-08-07 10:40:06
 
 | 子任务 | 状态 | 改动文件 | 完成时间 | 备注 |
 |--------|------|----------|----------|------|
-| - | ⬜ | - | - | 等待方案确认 |
+| Board.kt + Position + Move + Side + Piece + PieceType + GameStatus | ⬜ | model/ | - | 基础数据模型 |
+| MoveValidator.kt（7 种棋子走法验证） | ⬜ | engine/ | - | 核心逻辑 |
+| MoveGenerator.kt（所有合法着法生成） | ⬜ | engine/ | - | - |
+| CheckDetector.kt（将军/将杀/困毙） | ⬜ | engine/ | - | - |
+| FenConverter.kt（FEN 生成 + ICCS 互转） | ⬜ | engine/ | - | - |
+| 规则引擎单元测试 | ⬜ | test/ | - | 每种棋子 5+ 用例 |
 
 ---
 
 ## 已完成记录
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
+
+### 2026-08-07 10:40:06 — Phase 0: Android 项目搭建完成
+
+- **Gradle 构建系统**：Kotlin DSL 项目初始化（AGP 8.7.3 + Kotlin 2.0.21 + Gradle 8.9）
+- **依赖配置**：Compose BOM 2024.12.01 / OkHttp 4.12 / DataStore 1.1.1 / Security-crypto 1.1.0-alpha06 / Coroutines 1.9.0
+- **包结构**：`com.hualao.qiwang.*` 六层架构（model / engine / ai / data / ui / viewmodel）
+- **Native 支架**：CMakeLists.txt + pikafish_jni.cpp（pipe + fork JNI 桥接）
+- **主题**：Material 3 中国风配色（浅色/暗色双主题）
+- **安全配置**：allowBackup=false、网络安全配置限制 DeepSeek 域名、数据提取规则禁止备份
+- **MainActivity**：Compose 脚手架 + 边缘到边缘显示
+- **ProGuard**：Kotlin / OkHttp / Gson / Compose / Room / JNI 混淆规则
 
 ### 2026-08-07 10:04:42 — Git 仓库初始化与进度规范更新
 
@@ -188,10 +204,10 @@
 
 ### Phase 0 验收标准
 
-- [ ] Gradle 项目可编译，空 App 可在模拟器/真机运行
-- [ ] Compose 主题正常渲染
-- [ ] NDK 配置正确，CMake 可找到 C++ 编译器
-- [ ] 签名配置就绪
+- [x] Gradle 项目可编译，空 App 可在模拟器/真机运行
+- [x] Compose 主题正常渲染
+- [x] NDK 配置正确，CMake 可找到 C++ 编译器
+- [x] 签名配置就绪
 
 ### Phase 1 验收标准
 
