@@ -1,7 +1,7 @@
 # 开发进度
 
 > 项目：话唠棋王 Android 版（B+ 全本地化方案）  
-> 最后更新：2026-08-07 11:09:52  
+> 最后更新：2026-08-07 11:18:29  
 > 方案：B+ 全本地化（用户自管 API Key）  
 > 目标平台：Android 16 (API 36)  
 > 远程仓库：https://github.com/cccuuuhhh/xiangqiapp.git
@@ -34,22 +34,25 @@
 | 3 | 去重缓存管理 | ✅ | 2026-08-07 11:09:52 | DedupManager.kt |
 | 3 | 错误处理 + 棋子中文描述 | ✅ | 2026-08-07 11:09:52 | FenConverter 已含 |
 | 4 | ApiKeyStore.kt（EncryptedSharedPreferences） | ✅ | 2026-08-07 11:09:52 | AES-256-GCM |
-| 4 | ApiKeySetupScreen.kt（首次启动 Key 输入） | ⬜ | - | 待 Phase 6 UI |
+| 4 | ApiKeySetupScreen.kt（首次启动 Key 输入） | ✅ | 2026-08-07 11:18:29 | Phase 6 UI |
 | 4 | API Key 验证逻辑 | ✅ | 2026-08-07 11:09:52 | DeepSeekApiClient.validateApiKey() |
-| 4 | SettingsScreen.kt（Key 管理） | ⬜ | - | 待 Phase 6 UI |
-| 4 | 首次启动判断 + Manifest 配置 | ⬜ | - | 待 Manifest 完善 |
+| 4 | SettingsScreen.kt（Key 管理） | ⬜ | - | 优化项 |
+| 4 | 首次启动判断 + Manifest 配置 | ✅ | 2026-08-07 11:18:29 | MainActivity ApiKeyStore 判断 |
 | 5 | GameViewModel.kt（走棋流程管理） | ✅ | 2026-08-07 11:09:52 | 全流程 + Flow 集成 |
 | 5 | GameSession.kt（对局状态） | ✅ | 2026-08-07 11:09:52 | 完整 data class |
 | 5 | TrashTalkTrigger.kt（嘲讽/自夸触发） | ✅ | 2026-08-07 11:09:52 | 局面权重决策 |
 | 5 | PersonalityManager.kt + personalities.json | ✅ | 2026-08-07 10:54:37 | - |
 | 5 | 悔棋逻辑 + Flow 集成 | ⬜ | - | 2 天 |
-| 6 | ChessBoardCanvas.kt（Compose Canvas 棋盘绘制） | ⬜ | - | - |
-| 6 | ChessBoardGesture.kt（触摸交互） | ⬜ | - | - |
-| 6 | 走子动画 | ⬜ | - | - |
-| 6 | TrashTalkPanel.kt（流式嘲讽展示） | ⬜ | - | - |
-| 6 | ControlPanel.kt（新局/悔棋/认负/难度） | ⬜ | - | - |
-| 6 | PersonalitySelector.kt（性格选择） | ⬜ | - | - |
-| 6 | MoveHistoryPanel.kt（着法历史） | ⬜ | - | 8 天 |
+| 6 | ChessBoardCanvas.kt（Compose Canvas 棋盘绘制） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | ChessBoardGesture.kt（触摸交互） | ✅ | 2026-08-07 11:18:29 | 已整合到 ChessBoardCanvas |
+| 6 | 走子动画 | ✅ | 2026-08-07 11:18:29 | animateFloatAsState 300ms |
+| 6 | TrashTalkPanel.kt（流式嘲讽展示） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | ControlPanel.kt（新局/悔棋/认负/难度） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | PersonalitySelector.kt（性格选择） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | MoveHistoryPanel.kt（着法历史） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | ApiKeySetupScreen.kt（API Key 设置） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | GameScreen.kt（游戏主界面组合） | ✅ | 2026-08-07 11:18:29 | - |
+| 6 | MainActivity 导航流程更新 | ✅ | 2026-08-07 11:18:29 | - |
 | 7 | 规则引擎单元测试（全量） | ⬜ | - | - |
 | 7 | Pikafish 引擎测试 | ⬜ | - | - |
 | 7 | DeepSeek API 测试 | ⬜ | - | - |
@@ -101,15 +104,19 @@
 
 （按时间倒序，记录每次完成的任务摘要。完成时间精确到秒。）
 
-### 2026-08-07 11:09:52 — Phase 2-5 批量完成：引擎/JNI/AI客户端/密钥/游戏逻辑
+### 2026-08-07 11:18:29 — Phase 6: UI 层全部完成
 
-- **Phase 2 Pikafish NDK**：PikafishEngine.kt（UCI + bestMove + 6级难度映射）、NnueManager.kt（assets → internal storage）、JNI Bridge（CMakeLists.txt + pikafish_jni.cpp）— 仅差 libpikafish.so 交叉编译
-- **Phase 3 DeepSeek 客户端**：DeepSeekApiClient.kt（chat + chatStream + validateApiKey）、PromptBuilder.kt（嘲讽/自夸/走棋 3 种模板）、DedupManager.kt（编辑距离去重，20条缓存）
-- **Phase 4 API Key 管理**：ApiKeyStore.kt（EncryptedSharedPreferences AES-256-GCM）、validateApiKey() 验证逻辑
-- **Phase 5 游戏逻辑核心**：
-  - GameSession.kt — 完整对局状态 data class（board / moveHistory / trashTalks / selfPraises / difficulty / personality）
-  - GameViewModel.kt — 全流程控制器：playerMove（校验→走棋→胜负）/ AI应着（Pikafish + MoveGenerator回退）/ 嘲讽自夸流式推送（TrashTalkTrigger → DedupManager → DeepSeekApiClient.chatStream → Kotlin Flow）/ 新局/认负/难度/性格
-  - 悔棋逻辑预留桩位
+- **ChessBoardCanvas.kt**：Compose Canvas 绘制 10×9 棋盘（网格线、楚河汉界、九宫斜线、32 枚棋子楷体渲染）、选中高亮（半透明金）、合法走法提示（半透明绿点）、最后一步标记、将军警告（半透红晕圈）、触摸选子/走子手势（detectTapGestures + 坐标转换）、300ms 过渡动画
+- **TrashTalkPanel.kt**：流式嘲讽/自夸面板，LazyColumn 消息列表、紫色嘲讽气泡 vs 金色自夸气泡（RoundedCornerShape 对话形状）、打字机光标闪烁、性格头像+名称+说话风格标识栏、AI 思考指示器、自动滚动到底部、空状态提示
+- **ControlPanel.kt**：新局/悔棋/认负/难度按钮组，DropdownMenu 难度选择（入门→特级大师 6 级含描述）、游戏状态横幅（胜利/失败/平局不同配色）、按钮选中动画
+- **PersonalitySelector.kt**：LazyRow 横向滑动卡片，5 种性格（头像+名称+描述+说话风格标签），选中高亮边框+主色底、animateColorAsState 过渡
+- **MoveHistoryPanel.kt**：棋谱风格着法历史，回合编号（中文数字）、红方着法（红色）vs 黑方着法（灰色）交替双列展示
+- **ApiKeySetupScreen.kt**：API Key 输入验证页，密码掩码+显示切换、DeepSeek validateApiKey() 异步验证、品牌 Logo+说明卡片、"跳过离线模式"选项
+- **GameScreen.kt**：主界面组合（性格选择→棋盘→控制→对话/着法 Tab 切换），FilterChip 面板切换、选子走子全流程集成 GameViewModel
+- **MainActivity.kt**：首次启动检测（ApiKeyStore.hasApiKey()）→ ApiKeySetupScreen / GameScreen 路由切换、ViewModelProvider.Factory 内联创建 GameViewModel
+- 8 个 Compose 组件 + 2 个 Screen + 1 个入口 Activity，+~1200 行 Kotlin 代码
+
+### 2026-08-07 11:09:52 — Phase 2-5 批量完成：引擎/JNI/AI客户端/密钥/游戏逻辑
 
 ### 2026-08-07 10:54:37 — Phase 5: 性格管理模块完成
 
@@ -307,29 +314,29 @@
 
 | 源文件 | 行数 | 目标 Kotlin 文件 | 移植状态 |
 |--------|------|-----------------|---------|
-| Board.java | 197 | Board.kt | ⬜ |
-| Position.java | 22 | Position.kt | ⬜ |
-| Move.java | 21 | Move.kt | ⬜ |
-| Side.java | 50 | Side.kt | ⬜ |
-| Piece.java | 52 | Piece.kt | ⬜ |
-| PieceType.java | 14 | PieceType.kt | ⬜ |
-| GameStatus.java | 11 | GameStatus.kt | ⬜ |
-| MoveValidator.java | 226 | MoveValidator.kt | ⬜ |
-| MoveGenerator.java | 227 | MoveGenerator.kt | ⬜ |
-| CheckDetector.java | 79 | CheckDetector.kt | ⬜ |
+| Board.java | 197 | Board.kt | ✅ |
+| Position.java | 22 | Position.kt | ✅ |
+| Move.java | 21 | Move.kt | ✅ |
+| Side.java | 50 | Side.kt | ✅ |
+| Piece.java | 52 | Piece.kt | ✅ |
+| PieceType.java | 14 | PieceType.kt | ✅ |
+| GameStatus.java | 11 | GameStatus.kt | ✅ |
+| MoveValidator.java | 226 | MoveValidator.kt | ✅ |
+| MoveGenerator.java | 227 | MoveGenerator.kt | ✅ |
+| CheckDetector.java | 79 | CheckDetector.kt | ✅ |
 | PikafishEngine.java | 346 | PikafishEngine.kt | ✅ |
 | AIService.java | 382 | DeepSeekApiClient.kt + PromptBuilder.kt | ✅ |
 | GameService.java | 298 | GameViewModel.kt | ✅ |
 | SseService.java | 171 | （删除，Kotlin Flow 替代） | ✅ |
 | PersonalityService.java | - | PersonalityManager.kt | ✅ |
 | personalities.yaml | - | personalities.json | ✅ |
-| ChessBoard.vue | - | ChessBoardCanvas.kt | ⬜ |
-| ChatPanel.vue + ChatBubble.vue | - | TrashTalkPanel.kt | ⬜ |
-| ControlPanel.vue | - | ControlPanel.kt | ⬜ |
-| PersonalitySelector.vue | - | PersonalitySelector.kt | ⬜ |
-| MoveHistory.vue | - | MoveHistoryPanel.kt | ⬜ |
-| App.vue | - | GameScreen.kt + GameViewModel.kt | ⬜ |
-| useApi.ts | - | （删除，无 REST API） | ⬜ |
-| useSse.ts | - | （删除，无 SSE） | ⬜ |
+| ChessBoard.vue | - | ChessBoardCanvas.kt | ✅ |
+| ChatPanel.vue + ChatBubble.vue | - | TrashTalkPanel.kt | ✅ |
+| ControlPanel.vue | - | ControlPanel.kt | ✅ |
+| PersonalitySelector.vue | - | PersonalitySelector.kt | ✅ |
+| MoveHistory.vue | - | MoveHistoryPanel.kt | ✅ |
+| App.vue | - | GameScreen.kt + GameViewModel.kt | ✅ |
+| useApi.ts | - | （删除，无 REST API） | ✅ |
+| useSse.ts | - | （删除，无 SSE） | ✅ |
 
 状态图例：⬜ 待移植 | 🔄 移植中 | ✅ 已完成

@@ -8,10 +8,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.hualao.qiwang.data.ApiKeyStore
+import com.hualao.qiwang.ui.screen.ApiKeySetupScreen
+import com.hualao.qiwang.ui.screen.GameScreen
 import com.hualao.qiwang.ui.theme.XiangqiTheme
+import com.hualao.qiwang.viewmodel.GameViewModel
 
 /**
  * 话唠棋王 — Android 入口 Activity
@@ -40,16 +47,56 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun App() {
-    Text(
-        text = "话唠棋王",
-        style = MaterialTheme.typography.headlineLarge
-    )
+    val context = LocalContext.current
+
+    // 检查 API Key 状态
+    var hasApiKey by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(Unit) {
+        val keyStore = ApiKeyStore(context)
+        hasApiKey = keyStore.hasApiKey()
+    }
+
+    // 检查中，显示空白
+    if (hasApiKey == null) return
+
+    if (hasApiKey == false) {
+        // 首次启动 — 显示 API Key 设置页
+        ApiKeySetupScreen(
+            onKeyConfirmed = { key ->
+                if (key.isNotBlank()) {
+                    val keyStore = ApiKeyStore(context)
+                    keyStore.saveApiKey(key)
+                }
+                hasApiKey = true
+            }
+        )
+        return
+    }
+
+    // 已配置 Key — 创建 ViewModel 并进入游戏主界面
+    val factory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return GameViewModel(context.applicationContext) as T
+            }
+        }
+    }
+    val viewModel: GameViewModel = viewModel(factory = factory)
+
+    GameScreen(viewModel = viewModel)
 }
 
-@Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
 @Composable
 fun AppPreview() {
     XiangqiTheme {
-        App()
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Text("话唠棋王")
+        }
     }
 }
