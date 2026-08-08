@@ -24,18 +24,21 @@ import com.hualao.qiwang.viewmodel.StreamType
  *
  * 布局（竖屏）：
  * ```
- * ┌─────────────────────┐
- * │  PersonalitySelector │ ← 性格选择横排
- * ├─────────────────────┤
- * │                     │
- * │  ChessBoardCanvas   │ ← 中央棋盘
- * │                     │
- * ├─────────────────────┤
- * │   ControlPanel      │ ← 新局/悔棋/认负/难度
- * ├─────────────────────┤
- * │   TrashTalkPanel    │ ← 嘲讽面板（可展开）
- * │   (可切换到着法历史)  │
- * └─────────────────────┘
+ * ┌────────────────────────┐
+ * │  PersonalitySelector   │ ← 折叠：当前性格 + 展开按钮
+ * │  (展开后显示卡片横排)    │
+ * ├────────────────────────┤
+ * │                        │
+ * │    ChessBoardCanvas    │ ← 中央棋盘
+ * │                        │
+ * ├────────────────────────┤
+ * │     ControlPanel       │ ← 新局/悔棋/认负/难度
+ * ├────────────────────────┤
+ * │  切换标签：对话 / 着法    │
+ * ├────────────────────────┤
+ * │     TrashTalkPanel     │ ← 嘲讽面板（占用更多空间）
+ * │   (可切换到着法历史)     │
+ * └────────────────────────┘
  * ```
  */
 @Composable
@@ -49,6 +52,7 @@ fun GameScreen(
     val isStreaming by viewModel.isStreaming.collectAsState()
     val streamType by viewModel.streamType.collectAsState()
     val aiThinking by viewModel.aiThinking.collectAsState()
+    val hasApiKey by viewModel.hasApiKey.collectAsState()
 
     // 选中的棋子位置
     var selectedPiece by remember { mutableStateOf<Position?>(null) }
@@ -58,6 +62,9 @@ fun GameScreen(
 
     // 副面板切换：嘲讽 vs 着法历史
     var showMoveHistory by remember { mutableStateOf(false) }
+
+    // 性格选择器展开/折叠状态（默认折叠，节省空间给对话面板）
+    var expandedPersonality by remember { mutableStateOf(false) }
 
     // 监听错误
     LaunchedEffect(Unit) {
@@ -71,7 +78,7 @@ fun GameScreen(
     LaunchedEffect(session.board, session.lastMove) {
         if (session.lastMove != null && session.currentSide == Side.RED) {
             kingInCheck = try {
-                com.hualao.qiwang.engine.CheckDetector()
+                com.hualao.qiwang.engine.CheckDetector(com.hualao.qiwang.engine.MoveValidator())
                     .isInCheck(session.board, Side.RED)
             } catch (e: Exception) {
                 false
@@ -90,7 +97,7 @@ fun GameScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ========== 性格选择器 + 设置按钮 ==========
+            // ========== 性格选择器（折叠态节省空间）+ 设置按钮 ==========
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -101,6 +108,8 @@ fun GameScreen(
                         viewModel.getPersonalities().indexOfFirst { it.id == p.id }
                     } ?: 0,
                     onSelect = { viewModel.switchPersonality(it) },
+                    expanded = expandedPersonality,
+                    onExpandToggle = { expandedPersonality = !expandedPersonality },
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = onOpenSettings) {
@@ -193,9 +202,11 @@ fun GameScreen(
                     streamType = streamType,
                     personality = session.personality,
                     aiThinking = aiThinking,
+                    hasApiKey = hasApiKey,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .heightIn(min = 180.dp)
                 )
             }
         }

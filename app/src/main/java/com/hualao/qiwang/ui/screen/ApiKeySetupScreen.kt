@@ -133,7 +133,8 @@ fun ApiKeySetupScreen(
                     if (apiKey.isNotBlank()) validateKey(
                         apiKey, { isValidating = it },
                         { validationError = it; validationSuccess = it == null },
-                        scope
+                        scope,
+                        { onKeyConfirmed(apiKey) }
                     )
                 }
             ),
@@ -155,7 +156,8 @@ fun ApiKeySetupScreen(
                     apiKey,
                     { isValidating = it },
                     { validationError = it; validationSuccess = it == null },
-                    scope
+                    scope,
+                    { onKeyConfirmed(apiKey) }
                 )
             },
             modifier = Modifier
@@ -239,7 +241,8 @@ private fun validateKey(
     key: String,
     setValidating: (Boolean) -> Unit,
     setResult: (String?) -> Unit,
-    scope: kotlinx.coroutines.CoroutineScope
+    scope: kotlinx.coroutines.CoroutineScope,
+    onSuccess: () -> Unit
 ) {
     if (key.isBlank()) {
         setResult("请输入 API Key")
@@ -250,10 +253,11 @@ private fun validateKey(
     setResult(null)
 
     scope.launch {
-        val result = withContext(Dispatchers.IO) {
+        val result: String? = withContext(Dispatchers.IO) {
             try {
                 val client = DeepSeekApiClient(key)
-                client.validateApiKey()
+                if (client.validateApiKey()) null
+                else "API Key 无效，请检查后重试"
             } catch (e: Exception) {
                 e.message ?: "验证失败"
             }
@@ -263,6 +267,7 @@ private fun validateKey(
 
         if (result == null) {
             setResult(null) // 成功
+            onSuccess()
         } else {
             setResult(result)
         }

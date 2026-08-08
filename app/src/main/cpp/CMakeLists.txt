@@ -16,7 +16,7 @@ find_library(log-lib log)
 # ============================================================================
 
 # Pikafish 源码根目录
-set(PIKAFISH_SRC_DIR ${CMAKE_SOURCE_DIR}/../../../vendor/pikafish/src)
+set(PIKAFISH_SRC_DIR ${CMAKE_SOURCE_DIR}/../../../../vendor/pikafish/src)
 
 # 核心源文件（排除 main.cpp — 由 wrapper 替代）
 set(PIKAFISH_CORE_SRCS
@@ -117,12 +117,12 @@ target_compile_options(pikafish_static PRIVATE
 # Pikafish Wrapper 库（进程内引擎管理）
 # ============================================================================
 add_library(pikafish_wrapper STATIC
-    ${CMAKE_SOURCE_DIR}/../../../vendor/pikafish_wrapper.cpp
+    ${CMAKE_SOURCE_DIR}/../../../../vendor/pikafish_wrapper.cpp
 )
 
 target_include_directories(pikafish_wrapper PRIVATE
     ${PIKAFISH_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/../../../vendor
+    ${CMAKE_SOURCE_DIR}/../../../../vendor
 )
 
 target_compile_definitions(pikafish_wrapper PRIVATE
@@ -147,7 +147,7 @@ add_library(pikafish_bridge SHARED
 
 target_include_directories(pikafish_bridge PRIVATE
     ${PIKAFISH_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/../../../vendor
+    ${CMAKE_SOURCE_DIR}/../../../../vendor
 )
 
 target_compile_options(pikafish_bridge PRIVATE

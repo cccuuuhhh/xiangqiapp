@@ -18,6 +18,7 @@ object NnueManager {
     /**
      * 获取 NNUE 文件路径。
      * 如果文件不在 internal storage，从 assets 复制。
+     * 返回空字符串表示 NNUE 不可用，引擎将使用古典评估 (HCE)。
      */
     fun getNnuePath(context: Context): String {
         val targetFile = File(context.filesDir, NNUE_FILENAME)
@@ -26,7 +27,8 @@ object NnueManager {
             copyFromAssets(context, targetFile)
         }
 
-        return targetFile.absolutePath
+        // 只有文件确实存在才返回路径；否则返回空让引擎用 classical eval
+        return if (targetFile.exists()) targetFile.absolutePath else ""
     }
 
     /**

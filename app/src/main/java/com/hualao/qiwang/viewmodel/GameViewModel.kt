@@ -33,8 +33,8 @@ class GameViewModel(context: Context) : ViewModel() {
     private val apiKeyStore = ApiKeyStore(context)
     private val pikafishEngine = PikafishEngine(context)
     private val moveValidator = MoveValidator()
-    private val moveGenerator = MoveGenerator()
-    private val checkDetector = CheckDetector()
+    private val moveGenerator = MoveGenerator(moveValidator)
+    private val checkDetector = CheckDetector(moveValidator)
     private val dedupManager = DedupManager()
     private lateinit var trashTalkTrigger: TrashTalkTrigger
 
@@ -66,19 +66,26 @@ class GameViewModel(context: Context) : ViewModel() {
     private val _error = MutableSharedFlow<String>()
     val error: SharedFlow<String> = _error.asSharedFlow()
 
+    /** 是否已配置 API Key（决定 AI 对话是否可用） */
+    private val _hasApiKey = MutableStateFlow(false)
+    val hasApiKey: StateFlow<Boolean> = _hasApiKey.asStateFlow()
+
     // ==================== 初始化 ====================
 
     init {
-        // 加载性格配置
+        // 加载性格配置，并设置默认性格
         personalityManager.load()
+        val defaultPersonality = personalityManager.getCurrent()
+        _session.value = _session.value.copy(personality = defaultPersonality)
 
         // 初始化 TrashTalkTrigger
         trashTalkTrigger = TrashTalkTrigger(checkDetector)
 
         // 尝试获取 API Key 并创建 DeepSeek 客户端
         val key = apiKeyStore.getApiKey()
-        if (!key.isNullOrBlank()) {
-            deepSeekClient = DeepSeekApiClient(key)
+        _hasApiKey.value = !key.isNullOrBlank()
+        key?.takeIf { it.isNotBlank() }?.let {
+            deepSeekClient = DeepSeekApiClient(it)
         }
 
         // 初始化引擎
@@ -261,7 +268,8 @@ class GameViewModel(context: Context) : ViewModel() {
      */
     fun updateApiKey(key: String) {
         apiKeyStore.saveApiKey(key)
-        deepSeekClient = DeepSeekApiClient(key)
+        _hasApiKey.value = key.isNotBlank()
+        deepSeekClient = if (key.isNotBlank()) DeepSeekApiClient(key) else null
     }
 
     // ==================== AI 走棋 ====================
@@ -276,7 +284,7 @@ class GameViewModel(context: Context) : ViewModel() {
 
                 if (aiMove == null) {
                     // Pikafish 不可用，使用 MoveGenerator 回退
-                    val fallbackMoves = moveGenerator.generateMoves(s.board, Side.BLACK)
+                    val fallbackMoves = moveGenerator.generateAllLegalMoves(s.board, Side.BLACK)
                     val randomMove = fallbackMoves.randomOrNull()
                     if (randomMove == null) {
                         emitError("AI 无法出棋")

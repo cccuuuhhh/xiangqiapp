@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     hasApiKey: Boolean,
-    maskedKey: String,
+    maskedKey: String?,
     onSaveKey: (String) -> Unit,
     onDeleteKey: () -> Unit,
     onValidateKey: suspend (String) -> Boolean,
@@ -72,7 +72,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.Key,
+                            Icons.Default.Lock,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -93,7 +93,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                maskedKey,
+                                maskedKey ?: "无",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -134,11 +134,11 @@ fun SettingsScreen(
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                             trailingIcon = {
-                                IconButton(onClick = { showKey = !showKey }) {
-                                    Icon(
-                                        if (showKey) Icons.Default.VisibilityOff
-                                        else Icons.Default.Visibility,
-                                        contentDescription = if (showKey) "隐藏" else "显示"
+                                TextButton(onClick = { showKey = !showKey }) {
+                                    Text(
+                                        if (showKey) "隐藏" else "显示",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             },

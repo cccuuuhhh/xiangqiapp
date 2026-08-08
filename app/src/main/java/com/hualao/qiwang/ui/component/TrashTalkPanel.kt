@@ -41,6 +41,7 @@ fun TrashTalkPanel(
     streamType: StreamType,
     personality: PersonalityConfig?,
     aiThinking: Boolean,
+    hasApiKey: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -164,11 +165,24 @@ fun TrashTalkPanel(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "开始对局，AI 会在这里和你「交流」",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = if (hasApiKey)
+                            "开始对局，AI 会在这里和你「交流」"
+                        else
+                            "离线模式：AI 对弈正常，但无对话嘲讽",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    if (!hasApiKey) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "前往设置页添加 DeepSeek API Key 可开启 AI 嘴炮",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        )
+                    }
+                }
             }
         }
     }

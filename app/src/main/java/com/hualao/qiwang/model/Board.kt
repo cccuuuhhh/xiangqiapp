@@ -9,11 +9,6 @@ package com.hualao.qiwang.model
  */
 class Board {
 
-    companion object {
-        const val ROWS = 10
-        const val COLS = 9
-    }
-
     val grid: Array<Array<String>> = Array(ROWS) { Array(COLS) { "" } }
 
     /**
@@ -126,6 +121,9 @@ class Board {
     }
 
     companion object {
+        const val ROWS = 10
+        const val COLS = 9
+
         /**
          * 检查坐标是否在棋盘范围内
          */

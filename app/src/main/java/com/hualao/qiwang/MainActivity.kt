@@ -61,7 +61,7 @@ fun App() {
 
     // API Key 状态
     var hasApiKey by remember { mutableStateOf<Boolean?>(null) }
-    var maskedKey by remember { mutableStateOf("") }
+    var maskedKey by remember { mutableStateOf<String?>(null) }
     var currentScreen by remember { mutableStateOf(AppScreen.SETUP) }
 
     // 初始化

@@ -32,3 +32,4 @@ out/
 # ===== ProGuard mapping (release only, keep offline) =====
 *mapping.txt
 secrets.properties
+temp/

@@ -1,5 +1,8 @@
 pluginManagement {
     repositories {
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -11,9 +14,12 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-dependencyResolution {
+dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
         google()
         mavenCentral()
     }
